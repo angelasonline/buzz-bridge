@@ -1,0 +1,3 @@
+# Bridge runtime deps (Path B container). Both ship manylinux wheels — no build tools needed.
+coincurve>=19
+websockets>=12

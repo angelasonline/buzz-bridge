@@ -1,4 +1,3 @@
-[DEPLOY.md](https://github.com/user-attachments/files/30394839/DEPLOY.md)
 # Keeping the bridge online
 
 The forwarder is a poller: each run reads new Buzz announcements and forwards them.
@@ -47,6 +46,11 @@ Render builds the image; no local Docker is required. The `Dockerfile` is multi-
   websockets, both manylinux wheels), copies the `buzz` binary in beside `bridge.py`,
   `translate_forward.py`, and `runner.py`, and runs `runner.py`.
 
+`bridge.py`, `translate_forward.py`, and `runner.py` are vendored from
+[langlayer/buzz](https://github.com/angelasonline/langlayer/tree/main/buzz). The Docker
+build copies the versions in *this* repo, so a change made there does not reach the
+deployed image until it is copied here.
+
 Build context, committed beside the `Dockerfile`:
 
 - `Dockerfile`, `requirements.txt`
@@ -59,28 +63,20 @@ variables and are not baked into the image.
 | Purpose | Variables |
 |---|---|
 | Credentials | `BUZZ_RELAY_URL`, `BUZZ_PRIVATE_KEY`, `BUZZ_AUTH_TAG` |
-| Behavior | `LANGLAYER_URL`, `GEOHASH`, `LANGUAGES`, `SOURCE_LANGUAGE`, `INTERVAL`, `RELAY_COUNT` |
+| Behavior | `LANGLAYER_URL`, `GEOHASH`, `LANGUAGES`, `INTERVAL` — plus optional `SOURCE_LANGUAGE` and `RELAY_COUNT`, both defaulted |
 
 `PORT` is injected by Render. Do not set it.
 
-## Path A — local launchd (private)
+## Path A — local launchd
 
-Runs whenever the machine is on and awake, and survives logout and reboot. Viewable by
-others only if the port is exposed through a tunnel, so in practice this is the private
-option.
+For running the forwarder on a Mac instead of a host: launchd survives logout and reboot,
+and the status page stays local unless you expose the port through a tunnel.
 
-```bash
-cd ~/.buzz/REPOS/buzz-ops-bridge
-cp deploy/bridge.env.example .secrets/bridge.env   # fill in real values
-chmod 600 .secrets/bridge.env
-# edit the absolute-path placeholders in the plist to this repo's path:
-cp deploy/com.buzzbridge.runner.plist ~/Library/LaunchAgents/
-launchctl load -w ~/Library/LaunchAgents/com.buzzbridge.runner.plist
-open http://127.0.0.1:8787
-```
+That flow depends on a `deploy/` kit (a plist, a wrapper script, and an env template) that
+lives with the source checkout, not in this repo. See
+[langlayer/buzz](https://github.com/angelasonline/langlayer/tree/main/buzz).
 
-Same credential gate as above: the bot's `BUZZ_AUTH_TAG` must be in
-`.secrets/bridge.env` before reads succeed.
+The credential gate above applies there too.
 
 ## Status
 
